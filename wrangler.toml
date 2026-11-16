@@ -1,0 +1,8 @@
+name = "my-bot-collection"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "my-bot-collection-db"
+database_id = "ca5a826d-0020-4e59-ba01-ffa7bd2b1a24"

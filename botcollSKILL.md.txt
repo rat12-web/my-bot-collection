@@ -1,0 +1,63 @@
+---
+name: bot-collection-architect
+description: Domain rules, data schemas, reverse-engineering targets, deck legality engine, collection playset analytics, and TCG Thailand price integration specifications for the My BOT Collection (Battle of Talingchan TCG) web application. Load this skill FIRST whenever planning, reverse-engineering, coding, or testing My BOT Collection.
+---
+
+# My BOT Collection — Master Domain & Architecture Skill
+
+## 1. Domain Rules (Battle of Talingchan Official Standards)
+
+### 1.1 Card Identity vs. Name Playset Rule (CRITICAL)
+- **Catalog Scale:** `https://bottcg.com/cards` serves a hashed static JSON (`cards.<hash>.json`) with ~1,850 records across ~1,528 unique `print` codes.
+- **Hierarchy (3 Levels):**
+  1. `CardConcept` (grouped by exact `name`): Governs gameplay copy limits and Playset Completion.
+  2. `CardPrint` (grouped by `print`, e.g., `BT11-001`, `SD01-005`, `RM01-xxx`): Specific set release; image served at `https://cdn.bottcg.com/cards/{print}.png` (with fallback handling).
+  3. `CardVariant` (`print` + `rare` + `finish`): Specific collector SKU (`C`, `R`, `SR`, `UR`, `FR`, `SCR`/`SEC`, `PR`, `CBR`, `USEC`/`USCR`, `USAP`, `Promo` × `Standard` / `Foil` / `1st Edition`).
+- **Playset Target & Unlimited Over-Collection Rule:**
+  - Every standard card (`Avatar`, `Normal Magic`, `React Magic`, `Modification Magic`, `Land Magic`, `Construct`) has a **Playset Target of 4 copies per `name`**, UNLESS `ex` contains `Only #1` (or restricted by Ban List).
+  - Cards with `Only #1` have a **Target of 1 copy**.
+  - `Life` cards have a **Target of 1 copy per `name`** (since Life Deck requires 5 unique names).
+  - **No Upper Bound on Ownership:** `qtyOwned` can exceed 4 (e.g., 5, 12, 50+). Always compute:
+    - `playsetProgress = Math.min(totalOwnedByName, targetByName)`
+    - `missingForPlayset = Math.max(0, targetByName - totalOwnedByName)`
+    - `surplusCopies = Math.max(0, totalOwnedByName - targetByName)` (used for Trade Binder & Surplus Valuation).
+
+### 1.2 Tournament Deck & Sin-List ("การ์ดบาป") Validation Rules
+- **Main Deck:** Exactly 50 cards (`Avatar`, `Magic`, `Construct`).
+- **Mandatory Only #1:** Exactly 1 `Only #1` card in the Main Deck.
+- **Life Deck:** Exactly 5 `Life` cards; all 5 must have distinct `name`s.
+- **Side Deck (Best-of-3 Mode):** 0 to 10 cards (`Life` cards strictly prohibited; `Main + Side` combined cannot exceed 4 copies of the same `name`, and `Only #1` rules follow official tournament format).
+- **Banned Symbols:** Cards with symbol `ลำเอียง` or `SAMPLE` watermark are illegal in standard tournaments (`โดนใจ` is legal).
+- **Sin-List ("การ์ดบาป") Data-Driven Config (`src/data/banlist.json`):**
+  - Support 4 rule types: `BANNED` (0 copies), `LIMITED` (max 1, 2, or 3 copies), `CHOICE_PAIR_BAN` (cannot include Card A and Card B together, e.g., `เจ้ากล้าดียังไง` + `ริกกี้ นักปลอมแปลง`), and `CONDITIONAL` (e.g., `เมียพระอิศวร` requires all Avatars in Main/Side to reference `{เทพ}` symbol; `สัญญาเลือด` requires `Only #1` to have `{นรก}` symbol).
+
+---
+
+## 2. Reverse Engineering & External Integration Protocol
+
+### 2.1 Target A — Official Catalog & Public Decks (`https://bottcg.com`)
+Use `reverse-engineer-anything` (REA) + `craft-anything` to verify and extract:
+1. Active hashed JSON URL for `/cards` and its exact field mappings (`name`, `type`, `soi`, `print`, `rare`, `mainEffect`, `cost`, `gem`, `power`, `symbol`, `color`, `dropRate`, `favorText`, `creator`, `subtype`, `ex`).
+2. CDN image URL resolver logic in the frontend bundle (handling `.png`, `.webp`, rarity suffixes, or missing set images like `RM01`).
+3. Public deck API backing `https://bottcg.com/decks/public` and `https://bottcg.com/decks/<uuid>`, plus Deck Code format if exposed in client JS.
+
+### 2.2 Target B — Market Pricing Engine (`https://www.tcgthailand.com`)
+Use `reverse-engineer-anything` (REA) to inspect how `tcgthailand.com` fetches product listings for Battle of Talingchan (`category_ids=0768f1bf-ae5c-44ac-b3b1-3212d4296f3a`):
+1. Never call `tcgthailand.com` directly from browser client code (CORS & rate-limit hazard).
+2. Build a Next.js Route Handler (`/api/market/prices`) with:
+   - Server-side adapter querying `tcgthailand.com` search/category endpoints by `print` code and `rare`.
+   - Persistent local cache (SQLite / JSON cache / IndexedDB sync) with 6–12 hour TTL, rate-limiting (max 2 req/sec with backoff), and graceful fallback.
+   - Extracted metrics per `print + rare`: `lowestPriceTHB` (`เริ่มต้น ฿...`), `medianPriceTHB`, `availableStock` (`จำนวน ...`), `condition` (`NM`), `lastUpdated`, and direct `productUrl` / `searchUrl` on `tcgthailand.com`.
+
+---
+
+## 3. Required Analytics & Importer Modules
+
+1. **Competitive Deck Importer (`src/lib/deck-importer.ts`):**
+   - Must parse: (a) `bottcg.com/decks/<uuid>` URL or public deck browser, (b) Thai Tournament Deck Recipe text (`4 กุ่ย`, `กุ่ย x4`, `BT01-038 x2`, sectioned or unsectioned), (c) JSON/CSV deck exports.
+   - Must perform **Cross-Print Smart Resolution**: match required copies against ALL owned prints/rarities of the same `name`, showing both "Cheapest Owned Match" and "Exact Print Match".
+2. **4-Pillar Analysis Suite (`src/features/analytics/`):**
+   - **Playset & Master Completion:** Progress bars by Set (`BT01`–`BT12`, `SD`, `KD`, `CC`, `SL`, `RM`, `B2SA`/`B2SB`), SOI (1–4), Color, and Rarity.
+   - **Portfolio & Surplus Valuation:** Total collection market value (THB) + Surplus Value (`copies > 4` × `lowestPriceTHB`) for trade/sale planning.
+   - **Deck Gap & Budget Optimizer:** Missing cards for any imported tournament deck + exact THB cost to buy missing singles on `tcgthailand.com` (comparing Lowest-Rarity Budget Build vs. High-Rarity Bling Build).
+   - **Deck Curve & Ratio Telemetry:** Cost curve (0–10), Gem distribution (0–4) to prevent bricking when paying Avatar summon costs, Type split, and Symbol synergy breakdown.

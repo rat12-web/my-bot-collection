@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --bg-canvas: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-muted: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --border-subtle: #e2e8f0;
+  }
+
+  .dark {
+    --bg-canvas: #090d16;
+    --bg-surface: #111827;
+    --bg-muted: #1e293b;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --border-subtle: #1e293b;
+  }
+
+  html,
+  body {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@keyframes holo-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.animate-holo-shimmer {
+  animation: holo-shimmer 4s linear infinite;
+}
+
+.safe-pb {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}

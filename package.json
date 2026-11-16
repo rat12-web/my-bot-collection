@@ -1,0 +1,48 @@
+{
+  "name": "my-bot-collection",
+  "version": "1.0.0",
+  "private": true,
+  "description": "My BOT Collection — Production Card Binder, Market Valuation, Competitive Deck Importer & Analytics for Battle of Talingchan TCG",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:cf": "node scripts/build-cf-pages.mjs",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "sync-cards": "tsx scripts/sync-cards.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@tanstack/react-virtual": "^3.13.6",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dexie": "^4.0.11",
+    "dexie-react-hooks": "^1.1.7",
+    "lucide-react": "^0.487.0",
+    "next": "^15.3.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "recharts": "^2.15.3",
+    "tailwind-merge": "^3.2.0",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@playwright/test": "^1.52.0",
+    "@tailwindcss/postcss": "^4.1.4",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.14.1",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "eslint": "^9.25.0",
+    "eslint-config-next": "^15.3.2",
+    "jsdom": "^26.1.0",
+    "tailwindcss": "^4.1.4",
+    "tsx": "^4.19.3",
+    "vitest": "^3.1.2"
+  }
+}

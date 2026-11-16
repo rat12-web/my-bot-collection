@@ -1,0 +1,16 @@
+{
+  "name": "My BOT Collection",
+  "short_name": "BOT Collector",
+  "description": "สมุดสะสมการ์ด Battle of Talingchan วิเคราะห์พอร์ต จัดเด็คแข่งขัน และเช็กราคาตลาด TCG Thailand",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
